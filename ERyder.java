@@ -1,4 +1,3 @@
-
 public class ERyder {
 
     private String bikeID;      
