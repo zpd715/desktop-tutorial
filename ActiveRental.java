@@ -1,26 +1,31 @@
 import java.time.LocalDateTime;
 
 public class ActiveRental {
-    private String bikeID;
-    private String userEmail;
-    private LocalDateTime tripStartTime;
+    private String rentalId;
+    private RegisteredUser user;      // 关联用户对象
+    private String bikeId;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
 
-    public ActiveRental(String bikeID, String userEmail, LocalDateTime tripStartTime) {
-        this.bikeID = bikeID;
-        this.userEmail = userEmail;
-        this.tripStartTime = tripStartTime;
+    public ActiveRental(String rentalId, RegisteredUser user, String bikeId, LocalDateTime startTime) {
+        this.rentalId = rentalId;
+        this.user = user;
+        this.bikeId = bikeId;
+        this.startTime = startTime;
+        this.endTime = null;
     }
 
-    public String getBikeID() { return bikeID; }
-    public String getUserEmail() { return userEmail; }
-    public LocalDateTime getTripStartTime() { return tripStartTime; }
+    // Getters and Setters
+    public String getRentalId() { return rentalId; }
+    public RegisteredUser getUser() { return user; }
+    public String getBikeId() { return bikeId; }
+    public LocalDateTime getStartTime() { return startTime; }
+    public LocalDateTime getEndTime() { return endTime; }
+    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
 
     @Override
     public String toString() {
-        return "ActiveRental{" +
-                "bikeID='" + bikeID + '\'' +
-                ", userEmail='" + userEmail + '\'' +
-                ", tripStartTime=" + tripStartTime +
-                '}';
+        return "ActiveRental{" + "rentalId='" + rentalId + '\'' + ", user=" + user.getFullName() +
+               ", bikeId='" + bikeId + '\'' + ", startTime=" + startTime + ", endTime=" + endTime + '}';
     }
 }

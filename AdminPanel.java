@@ -1,223 +1,184 @@
 import java.util.*;
 
 public class AdminPanel {
-    private List<RegisteredUsers> registeredUsersList = new ArrayList<>();
-    private Scanner scanner = new Scanner(System.in);
+    private BikeService bikeService;
+    private RentalService rentalService;
+    private UserService userService;
+    private Deque<ERyderLog> systemLogStack;
 
-    public void userManagementOptions() {
-        int choice;
-        do {
-            System.out.println("\n=== Admin Panel ===");
-            System.out.println("1. Add New Users");
-            System.out.println("2. View Registered Users");
-            System.out.println("3. Remove Registered Users");
-            System.out.println("4. Update Registered Users");
-            System.out.println("5. EXIT");
-            System.out.print("Enter your choice: ");
+    public AdminPanel(BikeService bikeService, RentalService rentalService, UserService userService,
+                      Deque<ERyderLog> systemLogStack) {
+        this.bikeService = bikeService;
+        this.rentalService = rentalService;
+        this.userService = userService;
+        this.systemLogStack = systemLogStack;
+    }
 
-            choice = scanner.nextInt();
-            scanner.nextLine();
-
+    public void start() {
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            displayMenu();
+            String choice = scanner.nextLine();
             switch (choice) {
-                case 1:
-                    addNewUsers();
+                case "1":
+                    handleUserRegistration(scanner);
                     break;
-                case 2:
-                    viewRegisteredUsers();
+                case "2":
+                    handleFindBikes(scanner);
                     break;
-                case 3:
-                    removeRegisteredUsers();
+                case "3":
+                    handleStartRental(scanner);
                     break;
-                case 4:
-                    updateRegisteredUsers();
+                case "4":
+                    handleEndRental(scanner);
                     break;
-                case 5:
-                    System.out.println("Exiting program...");
+                case "5":
+                    handleTrackRentals();
                     break;
+                case "6":
+                    userService.displayUsers();
+                    break;
+                case "7":
+                    handleRemoveUser(scanner);
+                    break;
+                case "8":
+                    viewSystemLogs();
+                    break;
+                case "9":
+                    managePendingRequests(scanner);
+                    break;
+                case "0":
+                    System.out.println("Exiting...");
+                    return;
                 default:
-                    System.out.println("Invalid choice. Please try again.");
+                    System.out.println("Invalid option. Try again.");
             }
-        } while (choice != 5);
-    }
-
-    private void addNewUsers() {
-        System.out.print("How many users would you like to add? ");
-        int numUsers = scanner.nextInt();
-        scanner.nextLine();
-
-        for (int i = 0; i < numUsers; i++) {
-            System.out.println("\n--- Adding User " + (i + 1) + " ---");
-
-            System.out.print("Full Name: ");
-            String fullName = scanner.nextLine();
-
-            System.out.print("Email Address: ");
-            String emailAddress = scanner.nextLine();
-
-            System.out.print("Date of Birth (YYYY-MM-DD): ");
-            String dateOfBirth = scanner.nextLine();
-
-            System.out.print("Card Number: ");
-            String cardNumber = scanner.nextLine();
-
-            System.out.print("Card Provider: ");
-            String cardProvider = scanner.nextLine();
-
-            System.out.print("Card Expiry Date (MM/YY): ");
-            String cardExpiryDate = scanner.nextLine();
-
-            System.out.print("CVV: ");
-            String cvv = scanner.nextLine();
-
-            System.out.print("User Type: ");
-            String userType = scanner.nextLine();
-
-            String[] lastThreeTrips = new String[3];
-            for (int tripIndex = 0; tripIndex < 3; tripIndex++) {
-                System.out.println("\n--- Trip " + (tripIndex + 1) + " ---");
-                System.out.print("Date (YYYY-MM-DD): ");
-                String tripDate = scanner.nextLine();
-
-                System.out.print("Source: ");
-                String source = scanner.nextLine();
-
-                System.out.print("Destination: ");
-                String destination = scanner.nextLine();
-
-                System.out.print("Fare (€): ");
-                double fare = scanner.nextDouble();
-                scanner.nextLine();
-
-                System.out.print("Feedback (can be NULL): ");
-                String feedback = scanner.nextLine();
-
-                StringBuilder tripBuilder = new StringBuilder();
-                tripBuilder.append("Date: ").append(tripDate)
-                        .append(", Source: ").append(source)
-                        .append(", Destination: ").append(destination)
-                        .append(", Fare (€): ").append(fare)
-                        .append(", Feedback: ").append(feedback);
-
-                lastThreeTrips[tripIndex] = tripBuilder.toString();
-            }
-
-            RegisteredUsers user = new RegisteredUsers(fullName, emailAddress, dateOfBirth,
-                    cardNumber, cardExpiryDate, cardProvider, cvv, userType, lastThreeTrips);
-            registeredUsersList.add(user);
-        }
-        System.out.println(numUsers + " user(s) added successfully.");
-    }
-
-    private void viewRegisteredUsers() {
-        if (registeredUsersList.isEmpty()) {
-            System.out.println("No registered users to display.");
-            return;
-        }
-
-        System.out.println("\n=== Registered Users ===");
-        for (RegisteredUsers user : registeredUsersList) {
-            System.out.println(user);
         }
     }
 
-    private void removeRegisteredUsers() {
-        if (registeredUsersList.isEmpty()) {
-            System.out.println("No registered users to remove.");
-            return;
-        }
+    private void displayMenu() {
+        System.out.println("\n=== ERyder System ===");
+        System.out.println("1. Register new user");
+        System.out.println("2. Find available bikes by location");
+        System.out.println("3. Start rental");
+        System.out.println("4. End rental");
+        System.out.println("5. Track active rentals");
+        System.out.println("6. List all users");
+        System.out.println("7. Remove user");
+        System.out.println("8. View System Logs");
+        System.out.println("9. Manage Pending Bike Requests");
+        System.out.println("0. Exit");
+        System.out.print("Choose an option: ");
+    }
 
-        System.out.print("Enter the email address of the user to remove: ");
+    private void handleUserRegistration(Scanner scanner) {
+        System.out.print("Enter full name: ");
+        String fullName = scanner.nextLine();
+        System.out.print("Enter email: ");
         String email = scanner.nextLine();
+        System.out.print("Enter phone: ");
+        String phone = scanner.nextLine();
+        System.out.print("Enter user type (VIP/Regular): ");
+        String type = scanner.nextLine();
+        userService.addUser(fullName, email, phone, type);
+    }
 
-        Iterator<RegisteredUsers> iterator = registeredUsersList.iterator();
-        boolean found = false;
-        while (iterator.hasNext()) {
-            RegisteredUsers user = iterator.next();
-            if (user.getEmailAddress().equals(email)) {
-                iterator.remove();
-                found = true;
-                System.out.println("User with email " + email + " removed.");
-                break;
-            }
+    private void handleFindBikes(Scanner scanner) {
+        System.out.print("Enter location (Downtown/Uptown): ");
+        String location = scanner.nextLine();
+        if (!bikeService.validateLocation(location)) {
+            System.out.println("Invalid location.");
+            return;
         }
-        if (!found) {
-            System.out.println("No user found with this email address.");
+        List<Bike> bikes = bikeService.findAvailableBikes(location);
+        if (bikes.isEmpty()) {
+            System.out.println("No bikes available at " + location);
+        } else {
+            System.out.println("Available bikes:");
+            bikes.forEach(System.out::println);
         }
     }
 
-    private void updateRegisteredUsers() {
-        if (registeredUsersList.isEmpty()) {
-            System.out.println("No registered users to update.");
+    private void handleStartRental(Scanner scanner) {
+        System.out.print("Enter user email: ");
+        String email = scanner.nextLine();
+        RegisteredUser user = userService.findUserByEmail(email);
+        if (user == null) {
+            System.out.println("User not found.");
             return;
         }
+        System.out.print("Enter bike ID: ");
+        String bikeId = scanner.nextLine();
+        System.out.print("Enter location: ");
+        String location = scanner.nextLine();
+        rentalService.startRental(user, bikeId, location);
+    }
 
-        System.out.print("Enter the email address of the user to update: ");
+    private void handleEndRental(Scanner scanner) {
+        System.out.print("Enter rental ID: ");
+        String rentalId = scanner.nextLine();
+        rentalService.endRental(rentalId);
+    }
+
+    private void handleTrackRentals() {
+        List<ActiveRental> rentals = rentalService.trackActiveRentals();
+        if (rentals.isEmpty()) {
+            System.out.println("No active rentals.");
+        } else {
+            System.out.println("Active rentals:");
+            rentals.forEach(System.out::println);
+        }
+    }
+
+    private void handleRemoveUser(Scanner scanner) {
+        System.out.print("Enter user email to remove: ");
         String email = scanner.nextLine();
+        if (userService.removeUser(email)) {
+            System.out.println("User removed.");
+        } else {
+            System.out.println("User not found.");
+        }
+    }
 
-        RegisteredUsers userToUpdate = null;
-        for (RegisteredUsers user : registeredUsersList) {
-            if (user.getEmailAddress().equals(email)) {
-                userToUpdate = user;
-                break;
+    private void viewSystemLogs() {
+        if (systemLogStack.isEmpty()) {
+            System.out.println("No system logs available.");
+        } else {
+            System.out.println("\n=== System Logs ===");
+            for (ERyderLog log : systemLogStack) {
+                System.out.println(log);
             }
         }
+    }
 
-        if (userToUpdate == null) {
-            System.out.println("No user found with this email address.");
-            return;
+    private void managePendingRequests(Scanner scanner) {
+        while (true) {
+            System.out.println("\n--- Manage Pending Bike Requests ---");
+            System.out.println("1. View Queue");
+            System.out.println("2. Update Queue (remove first)");
+            System.out.println("3. Exit");
+            System.out.print("Choose: ");
+            String choice = scanner.nextLine();
+            switch (choice) {
+                case "1":
+                    Queue<BikeRequest> queue = bikeService.getBikeRequestQueue();
+                    if (queue.isEmpty()) {
+                        System.out.println("Queue is empty.");
+                    } else {
+                        System.out.println("Pending requests:");
+                        for (BikeRequest req : queue) {
+                            System.out.println(req);
+                        }
+                    }
+                    break;
+                case "2":
+                    bikeService.removeFirstRequest();
+                    break;
+                case "3":
+                    return;
+                default:
+                    System.out.println("Invalid option.");
+            }
         }
-
-        System.out.println("\nUpdating user: " + userToUpdate.getFullName());
-        System.out.println("(Press ENTER to keep the current value, or enter '0' for card number to keep it)");
-
-        System.out.print("Type new full name (press ENTER for no change): ");
-        String newFullName = scanner.nextLine();
-        if (!newFullName.isEmpty()) {
-            userToUpdate.setFullName(newFullName);
-        }
-
-        System.out.print("Type new email address (press ENTER for no change): ");
-        String newEmail = scanner.nextLine();
-        if (!newEmail.isEmpty()) {
-            userToUpdate.setEmailAddress(newEmail);
-        }
-
-        System.out.print("Type new date of birth (YYYY-MM-DD) (press ENTER for no change): ");
-        String newDob = scanner.nextLine();
-        if (!newDob.isEmpty()) {
-            userToUpdate.setDateOfBirth(newDob);
-        }
-
-        System.out.print("Type new card number (enter '0' for no change): ");
-        String newCardNumber = scanner.nextLine();
-        if (!newCardNumber.equals("0")) {
-            userToUpdate.setCardNumber(newCardNumber);
-        }
-
-        System.out.print("Type new card expiry date (MM/YY) (press ENTER for no change): ");
-        String newExpiry = scanner.nextLine();
-        if (!newExpiry.isEmpty()) {
-            userToUpdate.setCardExpiryDate(newExpiry);
-        }
-
-        System.out.print("Type new card provider (press ENTER for no change): ");
-        String newProvider = scanner.nextLine();
-        if (!newProvider.isEmpty()) {
-            userToUpdate.setCardProvider(newProvider);
-        }
-
-        System.out.print("Type new CVV (press ENTER for no change): ");
-        String newCvv = scanner.nextLine();
-        if (!newCvv.isEmpty()) {
-            userToUpdate.setCvv(newCvv);
-        }
-
-        System.out.print("Type new user type (press ENTER for no change): ");
-        String newUserType = scanner.nextLine();
-        if (!newUserType.isEmpty()) {
-            userToUpdate.setUserType(newUserType);
-        }
-
-        System.out.println("User details updated successfully.");
     }
 }

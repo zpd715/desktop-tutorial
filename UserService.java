@@ -1,52 +1,46 @@
 import java.util.List;
 
 public class UserService {
-    private RegisteredUsers registeredUsers;
-    private UserRegistration userRegistration;
+    private UserRepository userRepository;
 
-    public UserService(RegisteredUsers registeredUsers, UserRegistration userRegistration) {
-        this.registeredUsers = registeredUsers;
-        this.userRegistration = userRegistration;
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
-    public boolean addUser(String username, String password) {
-        return userRegistration.registerUser(username, password);
-    }
-
-    public boolean removeUser(String username) {
-        if (registeredUsers.containsUser(username)) {
-            registeredUsers.removeUser(username);
-            System.out.println("User " + username + " removed.");
-            return true;
+    public RegisteredUser addUser(String fullName, String email, String phone, String userType) {
+        RegisteredUser newUser;
+        if (userType.equalsIgnoreCase("VIP")) {
+            newUser = new VIPUser(fullName, email, phone);
+        } else {
+            newUser = new RegularUser(fullName, email, phone);
         }
-        System.out.println("User not found.");
-        return false;
+        userRepository.addUser(newUser);
+        System.out.println("User " + fullName + " registered as " + userType);
+        return newUser;
     }
 
-    public boolean updateUser(String oldUsername, String newUsername, String newPassword) {
-        User user = registeredUsers.findUser(oldUsername);
-        if (user == null) {
-            System.out.println("User not found.");
-            return false;
-        }
-        // 简单更新：删除原用户再添加新用户
-        registeredUsers.removeUser(oldUsername);
-        registeredUsers.addUser(new User(newUsername, newPassword));
-        System.out.println("User updated from " + oldUsername + " to " + newUsername);
-        return true;
+    public boolean removeUser(String email) {
+        return userRepository.removeUser(email);
     }
 
-    public List<User> getAllUsers() {
-        return registeredUsers.getAllUsers();
+    public RegisteredUser findUserByEmail(String email) {
+        return userRepository.findUserByEmail(email);
+    }
+
+    public List<RegisteredUser> getAllUsers() {
+        return userRepository.getAllUsers();
     }
 
     public void displayUsers() {
-        List<User> users = getAllUsers();
+        List<RegisteredUser> users = getAllUsers();
         if (users.isEmpty()) {
             System.out.println("No users registered.");
         } else {
             System.out.println("Registered Users:");
-            users.forEach(u -> System.out.println(" - " + u.getUsername()));
+            for (RegisteredUser u : users) {
+                System.out.print(" - " + u.getFullName() + " (" + u.getEmail() + ") -> ");
+                u.displayUserType();
+            }
         }
     }
 }
